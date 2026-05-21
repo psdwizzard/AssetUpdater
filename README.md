@@ -1,8 +1,8 @@
 # AssetUpdater
 
-AssetUpdater is a ComfyUI custom node package for processing large image asset libraries one file at a time. It is designed for texture, icon, and game-art update workflows where each source PNG needs to keep its folder structure, prompt context, alpha mask, dimensions, and source metadata through an image-edit pipeline.
+AssetUpdater is a ComfyUI custom node package for processing large image asset libraries one file at a time. It is designed for texture, icon, and game-art update workflows where each source PNG needs to keep its folder structure, prompt context, alpha mask, and dimensions through an image-edit pipeline.
 
-The included demo workflow can be used with image editing models such as Qwen Image Edit, Stable Diffusion image-to-image workflows, or other ComfyUI edit pipelines that accept an image, mask, and text prompt.
+The included demo workflow can be used with image editing models such as Qwen Image Edit, Flux Kontext or other ComfyUI compatable images edit models.
 
 ## What It Does
 
@@ -89,8 +89,4 @@ The template box supports `[folderName]`. When prompt files are generated, `[fol
 
 The loader advances by one image for each queued execution.
 
-## Compatibility
 
-Older workflows that still reference `AssetMan Auto Batch Loader`, `AssetMan Folder Loader`, `AssetMan Image Load`, or `AssetMan Save Output` continue to load through compatibility aliases. New workflows should use the `AssetUpdater ...` node names.
-
-The internal asset socket type remains stable so saved workflow links continue resolving.
