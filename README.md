@@ -2,7 +2,7 @@
 
 AssetUpdater is a ComfyUI custom node package for processing large image asset libraries one file at a time. It is designed for texture, icon, and game-art update workflows where each source PNG needs to keep its folder structure, prompt context, alpha mask, and dimensions through an image-edit pipeline.
 
-The included demo workflow can be used with image editing models such as Qwen Image Edit, Flux Kontext or other ComfyUI compatable images edit models.
+The included demo workflow can be used with image editing models such as Qwen Image Edit, Flux Kontext or other ComfyUI compatable image edit models.
 
 ## What It Does
 
