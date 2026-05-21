@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AssetUpdater Prompt Writer</title>
+  <style>
+    :root {
+      --bg: #f2ede3;
+      --panel: rgba(255, 251, 244, 0.9);
+      --panel-strong: #fffaf1;
+      --ink: #251b16;
+      --muted: #6d5a50;
+      --line: rgba(82, 53, 35, 0.18);
+      --accent: #b14f2c;
+      --accent-strong: #8f3415;
+      --success: #2f6a42;
+      --warn: #8b5c13;
+      --shadow: 0 18px 50px rgba(59, 35, 24, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(255, 215, 169, 0.65), transparent 34%),
+        radial-gradient(circle at top right, rgba(177, 79, 44, 0.16), transparent 28%),
+        linear-gradient(180deg, #efe4d2 0%, #f6f2eb 55%, #ede4d6 100%);
+    }
+
+    .shell {
+      width: min(1200px, calc(100% - 32px));
+      margin: 24px auto;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+    }
+
+    .hero p,
+    .hint,
+    .summary,
+    .empty {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 18px;
+      border-radius: 18px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    .button-row,
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      color: #fff8f0;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(177, 79, 44, 0.22);
+    }
+
+    button.secondary {
+      color: var(--ink);
+      background: #f7efe4;
+      box-shadow: none;
+      border: 1px solid var(--line);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    textarea,
+    input[type="search"],
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--ink);
+      background: #fffdf8;
+    }
+
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: grid;
+      gap: 12px;
+      margin: 24px 0 12px;
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel-strong);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(82, 53, 35, 0.1);
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      background: rgba(233, 221, 205, 0.45);
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .path {
+      font-weight: 700;
+    }
+
+    .folder-name {
+      display: block;
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: 4px;
+    }
+
+    .status {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status.pending {
+      color: var(--muted);
+    }
+
+    .status.created {
+      color: var(--success);
+    }
+
+    .status.skipped {
+      color: var(--warn);
+    }
+
+    .status.error {
+      color: #922f2f;
+    }
+
+    .summary {
+      min-height: 24px;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      table,
+      thead,
+      tbody,
+      th,
+      td,
+      tr {
+        display: block;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tr {
+        border-bottom: 1px solid rgba(82, 53, 35, 0.1);
+      }
+
+      td {
+        padding: 12px 14px;
+      }
+
+      td::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <h1>AssetUpdater Prompt Writer</h1>
+      <p>Pick a root folder, review the leaf folders only, edit the prompt label if needed, then generate <code>prompt.txt</code> in each leaf folder.</p>
+      <p class="hint">This uses the browser File System Access API, so open it in a current Chromium browser such as Chrome or Edge.</p>
+    </section>
+
+    <section class="controls">
+      <div class="panel">
+        <h2 class="panel-title">Folder</h2>
+        <div class="button-row">
+          <button id="pick-folder">Choose Root Folder</button>
+          <button id="rescan" class="secondary" disabled>Rescan</button>
+          <button id="generate" disabled>Generate Prompt Files</button>
+        </div>
+        <div class="meta-row" style="margin-top: 14px;">
+          <strong id="root-name">No folder selected</strong>
+        </div>
+        <p class="hint" style="margin-top: 12px;">Only folders with no subfolders are included. Indexes follow sorted PNG scan order starting at 0. Existing <code>prompt.txt</code> files are skipped.</p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Prompt Template</h2>
+        <textarea id="template">make this [folderName] mythoscape painting style, like an oil painting or digital art style, high detail, concept art while maintaining the original composition, color, albedo and proportions and Evenly lit.</textarea>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <input id="search" type="search" placeholder="Filter folders">
+      <p class="summary" id="summary">Choose a folder to begin.</p>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Leaf Folder</th>
+            <th>Start Index</th>
+            <th>End Index</th>
+            <th>PNG Count</th>
+            <th>Prompt Label</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr>
+            <td colspan="6" class="empty">No folders loaded.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      rootHandle: null,
+      rootName: "",
+      rows: [],
+      loading: false
+    };
+
+    const els = {
+      pickFolder: document.getElementById("pick-folder"),
+      rescan: document.getElementById("rescan"),
+      generate: document.getElementById("generate"),
+      rootName: document.getElementById("root-name"),
+      template: document.getElementById("template"),
+      search: document.getElementById("search"),
+      summary: document.getElementById("summary"),
+      rows: document.getElementById("rows")
+    };
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function storageKey() {
+      return `prompt-writer:${state.rootName || "default"}`;
+    }
+
+    function isPngFile(name) {
+      return name.toLowerCase().endsWith(".png");
+    }
+
+    function loadAliases() {
+      try {
+        return JSON.parse(localStorage.getItem(storageKey()) || "{}");
+      } catch {
+        return {};
+      }
+    }
+
+    function saveAliases() {
+      if (!state.rootName) {
+        return;
+      }
+
+      const aliases = Object.fromEntries(
+        state.rows.map((row) => [row.path, row.alias])
+      );
+
+      localStorage.setItem(storageKey(), JSON.stringify(aliases));
+    }
+
+    async function readSortedEntries(handle) {
+      const directories = [];
+      const pngFiles = [];
+
+      for await (const entry of handle.values()) {
+        if (entry.kind === "directory") {
+          directories.push(entry);
+        } else if (entry.kind === "file" && isPngFile(entry.name)) {
+          pngFiles.push(entry.name);
+        }
+      }
+
+      directories.sort((a, b) => a.name.localeCompare(b.name));
+      pngFiles.sort((a, b) => a.localeCompare(b));
+
+      return { directories, pngFiles };
+    }
+
+    async function scanDirectory(handle, segments = [], discovered = []) {
+      const { directories, pngFiles } = await readSortedEntries(handle);
+      const path = segments.join("\\") || handle.name;
+      const isLeaf = directories.length === 0;
+
+      for (const fileName of pngFiles) {
+        discovered.push({
+          folderPath: path,
+          fileName
+        });
+      }
+
+      let leafRows = [];
+
+      if (isLeaf) {
+        leafRows.push({
+          handle,
+          path,
+          folderName: handle.name,
+          alias: handle.name,
+          imageCount: pngFiles.length,
+          startIndex: null,
+          endIndex: null,
+          status: "Pending"
+        });
+      }
+
+      for (const child of directories) {
+        const nextSegments = [...segments, child.name];
+        const nested = await scanDirectory(child, nextSegments, discovered);
+        leafRows.push(...nested);
+      }
+
+      return leafRows;
+    }
+
+    function assignImageIndexes(rows, discovered) {
+      const indexMap = new Map();
+
+      discovered.forEach((item, index) => {
+        if (!indexMap.has(item.folderPath)) {
+          indexMap.set(item.folderPath, []);
+        }
+        indexMap.get(item.folderPath).push(index);
+      });
+
+      return rows.map((row) => {
+        const indexes = indexMap.get(row.path) || [];
+        return {
+          ...row,
+          imageCount: indexes.length,
+          startIndex: indexes.length > 0 ? indexes[0] : null,
+          endIndex: indexes.length > 0 ? indexes[indexes.length - 1] : null
+        };
+      });
+    }
+
+    function renderRows() {
+      const filter = els.search.value.trim().toLowerCase();
+      const visibleRows = state.rows.filter((row) => {
+        if (!filter) {
+          return true;
+        }
+
+        return row.path.toLowerCase().includes(filter) || row.alias.toLowerCase().includes(filter);
+      });
+
+      if (visibleRows.length === 0) {
+        els.rows.innerHTML = '<tr><td colspan="6" class="empty">No matching folders.</td></tr>';
+        updateSummary();
+        return;
+      }
+
+      els.rows.innerHTML = visibleRows.map((row) => {
+        const actualIndex = state.rows.indexOf(row);
+        const statusClass = row.status.toLowerCase();
+        const startIndexLabel = row.imageCount > 0 ? String(row.startIndex) : "-";
+        const endIndexLabel = row.imageCount > 0 ? String(row.endIndex) : "-";
+        return `
+          <tr>
+            <td data-label="Leaf Folder">
+              <span class="path">${escapeHtml(row.path)}</span>
+              <span class="folder-name">Folder name: ${escapeHtml(row.folderName)}</span>
+            </td>
+            <td data-label="Start Index">${escapeHtml(startIndexLabel)}</td>
+            <td data-label="End Index">${escapeHtml(endIndexLabel)}</td>
+            <td data-label="PNG Count">${row.imageCount}</td>
+            <td data-label="Prompt Label">
+              <input
+                type="text"
+                value="${escapeHtml(row.alias)}"
+                data-index="${actualIndex}"
+                aria-label="Prompt label for ${escapeHtml(row.path)}"
+              >
+            </td>
+            <td data-label="Status">
+              <span class="status ${statusClass}">${escapeHtml(row.status)}</span>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      els.rows.querySelectorAll("input[data-index]").forEach((input) => {
+        input.addEventListener("input", (event) => {
+          const row = state.rows[Number(event.target.dataset.index)];
+          row.alias = event.target.value.trim() || row.folderName;
+          saveAliases();
+          updateSummary();
+        });
+      });
+
+      updateSummary();
+    }
+
+    function updateButtons() {
+      const hasRows = state.rows.length > 0;
+      els.rescan.disabled = !state.rootHandle || state.loading;
+      els.generate.disabled = !hasRows || state.loading;
+      els.pickFolder.disabled = state.loading;
+    }
+
+    function updateSummary() {
+      if (!state.rootHandle) {
+        els.summary.textContent = "Choose a folder to begin.";
+        return;
+      }
+
+      const total = state.rows.length;
+      const filtered = state.rows.filter((row) => {
+        const filter = els.search.value.trim().toLowerCase();
+        if (!filter) {
+          return true;
+        }
+        return row.path.toLowerCase().includes(filter) || row.alias.toLowerCase().includes(filter);
+      }).length;
+      const images = state.rows.reduce((total, row) => total + row.imageCount, 0);
+      const created = state.rows.filter((row) => row.status === "Created").length;
+      const skipped = state.rows.filter((row) => row.status === "Skipped").length;
+      const errors = state.rows.filter((row) => row.status === "Error").length;
+
+      els.summary.textContent = `${total} leaf folders loaded, ${filtered} visible, ${images} PNGs total, ${created} created, ${skipped} skipped, ${errors} errors.`;
+    }
+
+    async function scanFolders() {
+      if (!state.rootHandle) {
+        return;
+      }
+
+      state.loading = true;
+      els.summary.textContent = "Scanning leaf folders...";
+      updateButtons();
+
+      const aliases = loadAliases();
+      const discovered = [];
+      const rows = await scanDirectory(state.rootHandle, [], discovered);
+      state.rows = assignImageIndexes(rows.map((row) => ({
+        ...row,
+        alias: aliases[row.path] || row.folderName,
+        status: "Pending"
+      })).sort((a, b) => a.path.localeCompare(b.path)), discovered);
+
+      state.loading = false;
+      renderRows();
+      updateButtons();
+    }
+
+    async function pickRootFolder() {
+      try {
+        state.rootHandle = await window.showDirectoryPicker();
+        state.rootName = state.rootHandle.name;
+        els.rootName.textContent = state.rootName;
+        await scanFolders();
+      } catch (error) {
+        if (error && error.name !== "AbortError") {
+          els.summary.textContent = `Folder selection failed: ${error.message}`;
+        }
+      }
+    }
+
+    async function fileExists(directoryHandle, fileName) {
+      try {
+        await directoryHandle.getFileHandle(fileName);
+        return true;
+      } catch (error) {
+        if (error && error.name === "NotFoundError") {
+          return false;
+        }
+        throw error;
+      }
+    }
+
+    function buildPrompt(label) {
+      return els.template.value.replaceAll("[folderName]", label);
+    }
+
+    async function generatePrompts() {
+      state.loading = true;
+      updateButtons();
+      els.summary.textContent = "Writing prompt files...";
+
+      for (const row of state.rows) {
+        try {
+          const exists = await fileExists(row.handle, "prompt.txt");
+          if (exists) {
+            row.status = "Skipped";
+            renderRows();
+            continue;
+          }
+
+          const fileHandle = await row.handle.getFileHandle("prompt.txt", { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(buildPrompt(row.alias));
+          await writable.close();
+          row.status = "Created";
+        } catch (error) {
+          row.status = "Error";
+          console.error(`Failed to write ${row.path}`, error);
+        }
+
+        renderRows();
+      }
+
+      state.loading = false;
+      updateButtons();
+      updateSummary();
+    }
+
+    els.pickFolder.addEventListener("click", pickRootFolder);
+    els.rescan.addEventListener("click", scanFolders);
+    els.generate.addEventListener("click", generatePrompts);
+    els.search.addEventListener("input", renderRows);
+    els.template.addEventListener("input", updateSummary);
+    updateButtons();
+  </script>
+</body>
+</html>
